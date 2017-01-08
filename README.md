@@ -80,7 +80,9 @@ Using pip:
 
 You may use ji from Vim to look up the kanji in the text file you are currently editing. Add this line to your `.vimrc`,
 
-    nmap <leader>j "jyl:!ji -m j<CR>
+    nmap <leader>j "jyl:!ji -m <Ctrl+R>j<CR>
+
+(Note: replace Ctrl+R with the actual key combination!)
 
 Then, when your cursor is on a kanji in normal mode, you can type `<leader>j` and the kanji information will be shown in the terminal screen.
 
