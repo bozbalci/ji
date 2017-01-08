@@ -46,6 +46,8 @@ parser = argparse.ArgumentParser(
 parser.add_argument("kanji", help="the kanji to search for")
 parser.add_argument("-m", "--minimal", action="store_true",
     help="produce minimal output")
+parser.add_argument("-n", "--nanori", action="store_true",
+    help="list nanori readings")
 parser.add_argument("-e", "--examples", type=int, metavar="N",
         help="print the first N examples", default=-1)
 options = parser.parse_args()
@@ -60,6 +62,9 @@ for match in search:
     print("{}".format(entry.find("english").text))
     print("On: {}".format(entry.find("onyomi").text))
     print("Kun: {}".format(entry.find("kunyomi").text))
+
+    if options.nanori:
+        print("Nanori: {}".format(entry.find("nanori").text))
 
     print("JLPT N{}, Jouyou: {}, Freq: {}, Heisig: {} [{}]".format(
         entry.find("jlpt-level").text,
