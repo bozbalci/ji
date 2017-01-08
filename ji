@@ -68,11 +68,12 @@ for match in search:
     if options.nanori:
         print("Nanori: {}".format(entry.find("nanori").text))
 
-    print("JLPT N{}, Jouyou: {}, Freq: {}, Heisig: {} [{}]".format(
+    print("JLPT N{}, Jouyou: {}, Freq: {}, Heisig: {}, Strokes: {}, Keyword: [{}]".format(
         entry.find("jlpt-level").text,
         entry.find("jouyou-grade").text,
         entry.find("frequency").text,
         entry.find("rtk-index").text,
+        entry.find("number-of-strokes").text,
         entry.find("keyword").text
     ))
 
