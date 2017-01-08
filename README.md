@@ -60,22 +60,31 @@ Using pip:
 
     $ ji -m 人
     人
-    person
+    person [person]
     On: ジン、ニン
     Kun: ひと、-り、-と
-    JLPT N5, Jouyou: 1, Freq: 5, Heisig: 1023 [person]
+    JLPT N5, Jouyou: 1, Freq: 5, Heisig: 1023, Strokes: 2
 
     $ ji -e 3 字
     字
-    character, letter, word, section of village
+    character, letter, word, section of village [character]
     On: ジ
     Kun: あざ、あざな、-な
-    JLPT N4, Jouyou: 1, Freq: 485, Heisig: 197 [character]
+    JLPT N4, Jouyou: 1, Freq: 485, Heisig: 197, Strokes: 6
 
     Examples:
     文字(もんじ): (1) letter (of alphabet); character (2) literal
     黒字(くろじ): balance (figure) in the black
     数字(すうじ): numeral; figure; digit; numeric character
+    
+    $ ji -Me0 葉
+    葉
+    leaf, plane, lobe, needle, blade, spear, no. of flat things [leaf]
+    On: ヨウ
+    Kun: は
+    JLPT N3, Jouyou: 3, Freq: 414, Heisig: 243, Strokes: 12
+    On top of the leaves a flower appears, promising new generations for the old tree below.
+    The flower generation spent far too much time up trees trying to smoke leaves.
 
 ## Tips
 
