@@ -1,0 +1,77 @@
+#!/usr/bin/python
+#
+# Copyright (c) 2016, Berk Ozbalci
+# All rights reserved.
+# 
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+# 
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+# 
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+# 
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+DICTIONARY_PATH = "kanji_all.xml"
+
+import sys
+import argparse
+from lxml import etree
+
+parser = argparse.ArgumentParser(
+    prog="ji",
+    usage="%(prog)s [options]",
+    description="Look up kanji information from the CLI."
+)
+parser.add_argument("kanji", help="the kanji to search for")
+parser.add_argument("-m", "--minimal", action="store_true",
+    help="produce minimal output")
+parser.add_argument("-e", "--examples", type=int, metavar="N",
+        help="print the first N examples", default=-1)
+options = parser.parse_args()
+
+root = etree.parse(DICTIONARY_PATH)
+search = root.xpath(".//kanji[text()=\"{}\"]".format(options.kanji))
+
+for match in search:
+    entry = match.getparent()
+
+    print("{}".format(entry.find("kanji").text))
+    print("{}".format(entry.find("english").text))
+    print("On: {}".format(entry.find("onyomi").text))
+    print("Kun: {}".format(entry.find("kunyomi").text))
+
+    print("JLPT N{}, Jouyou: {}, Freq: {}, Heisig: {} [{}]".format(
+        entry.find("jlpt-level").text,
+        entry.find("jouyou-grade").text,
+        entry.find("frequency").text,
+        entry.find("rtk-index").text,
+        entry.find("keyword").text
+    ))
+
+    if options.minimal:
+        continue
+
+    if options.examples == 0:
+        continue
+
+    print("\nExamples:")
+    if options.examples == -1:
+        for ex in entry.find("examples").getchildren():
+            print("{}".format(ex.text))
+    else:
+        for _, ex in zip(range(options.examples),
+                entry.find("examples").getchildren()):
+            print("{}".format(ex.text))
