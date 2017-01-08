@@ -26,9 +26,17 @@
 
 DICTIONARY_PATH = "kanji_all.xml"
 
+import os
 import sys
 import argparse
 from lxml import etree
+
+def _absolute_path(path):
+    path = os.path.expandvars(path)
+    path = os.path.expanduser(path)
+    path = os.path.abspath(path)
+
+    return path
 
 parser = argparse.ArgumentParser(
     prog="ji",
@@ -42,7 +50,7 @@ parser.add_argument("-e", "--examples", type=int, metavar="N",
         help="print the first N examples", default=-1)
 options = parser.parse_args()
 
-root = etree.parse(DICTIONARY_PATH)
+root = etree.parse(_absolute_path(DICTIONARY_PATH))
 search = root.xpath(".//kanji[text()=\"{}\"]".format(options.kanji))
 
 for match in search:
