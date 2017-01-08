@@ -4,7 +4,7 @@ Look up Kanji information from the CLI.
 
 ## Features
 
-* Has 3793 kanji in its' dictionary!
+* Has 3793 kanji in its dictionary!
 * Lists the most common on'yomi and kun'yomi readings.
 * Can look up frequency, JLPT level, Jouyou grade, Heisig index.
 * Can limit examples to a certain number.
