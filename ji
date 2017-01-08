@@ -61,20 +61,19 @@ for match in search:
     entry = match.getparent()
 
     print("{}".format(entry.find("kanji").text))
-    print("{}".format(entry.find("english").text))
+    print("{} [{}]".format(entry.find("english").text, entry.find("keyword").text))
     print("On: {}".format(entry.find("onyomi").text))
     print("Kun: {}".format(entry.find("kunyomi").text))
 
     if options.nanori:
         print("Nanori: {}".format(entry.find("nanori").text))
 
-    print("JLPT N{}, Jouyou: {}, Freq: {}, Heisig: {}, Strokes: {}, Keyword: [{}]".format(
+    print("JLPT N{}, Jouyou: {}, Freq: {}, Heisig: {}, Strokes: {}".format(
         entry.find("jlpt-level").text,
         entry.find("jouyou-grade").text,
         entry.find("frequency").text,
         entry.find("rtk-index").text,
-        entry.find("number-of-strokes").text,
-        entry.find("keyword").text
+        entry.find("number-of-strokes").text
     ))
 
     if options.minimal:
