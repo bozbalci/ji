@@ -52,6 +52,7 @@ Using pip:
     optional arguments:
       -h, --help          show this help message and exit
       -m, --minimal       produce minimal output
+      -M, --mnemonics     show mnemonics
       -n, --nanori        list nanori readings
       -e N, --examples N  print the first N examples
 

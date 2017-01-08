@@ -46,6 +46,8 @@ parser = argparse.ArgumentParser(
 parser.add_argument("kanji", help="the kanji to search for")
 parser.add_argument("-m", "--minimal", action="store_true",
     help="produce minimal output")
+parser.add_argument("-M", "--mnemonics", action="store_true",
+    help="show mnemonics")
 parser.add_argument("-n", "--nanori", action="store_true",
     help="list nanori readings")
 parser.add_argument("-e", "--examples", type=int, metavar="N",
@@ -76,6 +78,10 @@ for match in search:
 
     if options.minimal:
         continue
+
+    if options.mnemonics:
+        print("{}".format(entry.find("koohii-story-1").text))
+        print("{}".format(entry.find("koohii-story-2").text))
 
     if options.examples == 0:
         continue
