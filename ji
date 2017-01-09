@@ -188,6 +188,9 @@ class KanjiDictionary(object):
     def by_jlpt_level(self, query):
         return self._entries_exact("jlpt-level", query)
     
+    def by_jouyou_grade(self, query):
+        return self._entries_exact("jouyou-grade", query)
+    
     def by_keyword(self, query):
         return self._entries_contains("keyword", query)
     
@@ -244,14 +247,18 @@ parser = argparse.ArgumentParser(
             %koohii_story_2% %rtk_index%\
             """
 )
-parser.add_argument("kanji", help="the kanji to search for")
+parser.add_argument("kanji", nargs="?", help="search by kanji")
+parser.add_argument("-N", "--jlpt", metavar="LEVEL",
+    type=_positive_integer, help="list all kanji in JLPT %(metavar)s")
+parser.add_argument("-J", "--jouyou", metavar="GRADE",
+    help="list all kanji in Jouyou grade %(metavar)s")
 parser.add_argument("-f", "--format", default=format_default,
     help="specify output formatting")
 parser.add_argument("-o", "--only-kanji", action="store_true",
     help="only print the matching kanji characters")
 parser.add_argument("-m", "--minimal", action="store_true",
     help="produce minimal output (no examples, no mnemonics)")
-parser.add_argument("-e", "--examples", metavar="N", default=-1,
+parser.add_argument("-e", "--examples", metavar="NUM", default=-1,
     type=_positive_integer, help="prints the first %(metavar)s examples")
 options = parser.parse_args()
 
@@ -260,7 +267,17 @@ options.format = codecs.getdecoder("unicode_escape")(options.format)[0]
 
 # find and print the requested information, then exit
 kd = KanjiDictionary()
-matches = kd.by_kanji(options.kanji)
+
+if options.jlpt:
+    matches = kd.by_jlpt_level(options.jlpt)
+elif options.jouyou:
+    matches = kd.by_jouyou_grade(options.jouyou)
+else:
+    matches = kd.by_kanji(options.kanji)
+
+if matches == []:
+    sys.stderr.write("No kanji found.\n")
+    sys.exit(1)
 
 search_results = []
 for kanji in matches:
