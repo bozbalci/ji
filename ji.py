@@ -107,26 +107,26 @@ class Kanji(object):
     def _replace_format(self):
         placeholders = {
             "%kanji%": self.kanji,
-            "%kunyomi%": self.kunyomi,
-            "%onyomi%": self.onyomi,
+            "%kun%": self.kunyomi,
+            "%on%": self.onyomi,
             "%nanori%": self.nanori,
-            "%english%": self.english,
+            "%meaning%": self.english,
             "%examples%": self._examples(),
-            "%jlpt_level%": self.jlpt_level,
-            "%jouyou_grade%": self.jouyou_grade,
-            "%frequency%": self.frequency,
+            "%jlpt%": self.jlpt_level,
+            "%jouyou%": self.jouyou_grade,
+            "%freq%": self.frequency,
             "%components%": self._components(),
-            "%number_of_strokes%": self.number_of_strokes,
-            "%kanji_radical%": self.kanji_radical,
+            "%strokes%": self.number_of_strokes,
+            "%radical%": self.kanji_radical,
             "%radical_number%": self.radical_number,
             "%radical_strokes%": self.radical_strokes,
             "%radical_reading%": self.radical_reading,
             "%traditional_form%": self.traditional_form,
             "%classification%": self.classification,
             "%keyword%": self.keyword,
-            "%koohii_story_1%": self.koohii_story_1,
-            "%koohii_story_2%": self.koohii_story_2,
-            "%rtk_index%": self.rtk_index,
+            "%story1%": self.koohii_story_1,
+            "%story2%": self.koohii_story_2,
+            "%index%": self.rtk_index,
         }
 
         result = self.format
@@ -158,6 +158,9 @@ class KanjiDictionary(object):
         return self.root.xpath(".//{}[contains(text(),\"{}\")]".format(tag,
             query))
 
+    def _search_text_nonempty(self, tag):
+        return self.root.xpath(".//{}[string-length(text()) > 0]".format(tag))
+
     def _get_entries(self, search):
         result = []
         for match in search:
@@ -171,6 +174,9 @@ class KanjiDictionary(object):
     
     def _entries_contains(self, tag, query):
         return self._get_entries(self._search_text_contains(tag, query))
+
+    def _entries_nonempty(self, tag):
+        return self._get_entries(self._search_text_nonempty(tag))
 
     # bunch of wrappers for public usage
     def by_kanji(self, query):
@@ -200,31 +206,34 @@ class KanjiDictionary(object):
     def by_rtk_index(self, query):
         return self._entries_exact("rtk-index", query)
 
+    def all_rtk_index(self):
+        return self._entries_nonempty("rtk-index")
+
 format_default = """\
 %kanji%
-%english% [%keyword%]
-On: %onyomi%
-Kun: %kunyomi%
-JLPT N%jlpt_level%, Jouyou: %jouyou_grade%, \
-Freq.: %frequency%, Heisig: %rtk_index%, \
-Strokes: %number_of_strokes%
+%meaning% [%keyword%]
+On: %on%
+Kun: %kun%
+JLPT N%jlpt%, Jouyou: %jouyou%, \
+Freq.: %freq%, Heisig: %index%, \
+Strokes: %strokes%
 
 Examples:
 %examples%
 
 Mnemonics:
-%koohii_story_1%
-%koohii_story_2%
+%story1%
+%story2%
 """
 
 format_minimal = """\
 %kanji%
-%english% [%keyword%]
-On: %onyomi%
-Kun: %kunyomi%
-JLPT N%jlpt_level%, Jouyou: %jouyou_grade%, \
-Freq.: %frequency%, Heisig: %rtk_index%, \
-Strokes: %number_of_strokes%
+%meaning% [%keyword%]
+On: %on%
+Kun: %kun%
+JLPT N%jlpt%, Jouyou: %jouyou%, \
+Freq.: %freq%, Heisig: %index%, \
+Strokes: %strokes%
 """
 
 # parse command-line arguments
@@ -235,69 +244,84 @@ def _positive_integer(string):
         raise argparse.ArgumentTypeError(msg)
     return value
 
-parser = argparse.ArgumentParser(
-    prog="ji",
-    usage="%(prog)s [options]",
-    description="Look up kanji information from the CLI.",
-    epilog="""Available placeholders are: %kanji% %kunyomi% %onyomi% \
-            %nanori% %english% %examples% %jlpt_level% %jouyou_grade% \
-            %frequency% %components% %number_of_strokes% %kanji_radical% \
-            %radical_number% %radical_strokes% %radical_reading% \
-            %traditional_form% %classification% %keyword% %koohii_story_1% \
-            %koohii_story_2% %rtk_index%\
-            """
-)
-parser.add_argument("kanji", nargs="?", help="search by kanji")
-parser.add_argument("-N", "--jlpt", metavar="LEVEL",
-    type=_positive_integer, help="list all kanji in JLPT %(metavar)s")
-parser.add_argument("-J", "--jouyou", metavar="GRADE",
-    help="list all kanji in Jouyou grade %(metavar)s")
-parser.add_argument("-f", "--format", default=format_default,
-    help="specify output formatting")
-parser.add_argument("-o", "--only-kanji", action="store_true",
-    help="only print the matching kanji characters")
-parser.add_argument("-m", "--minimal", action="store_true",
-    help="produce minimal output (no examples, no mnemonics)")
-parser.add_argument("-e", "--examples", metavar="NUM", default=-1,
-    type=_positive_integer, help="prints the first %(metavar)s examples")
-options = parser.parse_args()
+def main():
+    parser = argparse.ArgumentParser(
+        prog="ji",
+        usage="%(prog)s [options]",
+        description="Look up kanji information from the CLI.",
+        epilog="""Available placeholders are: %kanji% %kun% %on% %nanori% %meaning% \
+                %examples% %jlpt% %jouyou% %freq% %components% %strokes% %radical% \
+                %radical_number% %radical_strokes% %radical_reading% %traditional_form% \
+                %classification% %keyword% %story1% %story2% %index% \
+                """
+    )
+    parser.add_argument("kanji", nargs="?", help="search by kanji")
+    parser.add_argument("-a", "--all", action="store_true",
+            help="match every kanji with a Heisig index")
+    parser.add_argument("-N", "--jlpt", metavar="LEVEL",
+        type=_positive_integer, help="list all kanji in JLPT %(metavar)s")
+    parser.add_argument("-J", "--jouyou", metavar="GRADE",
+        help="list all kanji in Jouyou grade %(metavar)s")
+    parser.add_argument("-i", "--rtk-index", metavar="INDEX",
+        help="search kanji by Heisig index")
+    parser.add_argument("-f", "--format", default=format_default,
+        help="specify output formatting")
+    parser.add_argument("-o", "--only-kanji", action="store_true",
+        help="only print the matching kanji characters")
+    parser.add_argument("-m", "--minimal", action="store_true",
+        help="produce minimal output (no examples, no mnemonics)")
+    parser.add_argument("-M", "--mnemonics", action="store_true",
+        help="when combined with -m, print mnemonics as well")
+    parser.add_argument("-e", "--examples", metavar="NUM", default=-1,
+        type=_positive_integer, help="prints the first %(metavar)s examples")
+    options = parser.parse_args()
 
-# Unescape newlines, tabs, etc.
-options.format = codecs.getdecoder("unicode_escape")(options.format)[0]
+    # Unescape newlines, tabs, etc.
+    options.format = codecs.getdecoder("unicode_escape")(options.format)[0]
 
-# find and print the requested information, then exit
-kd = KanjiDictionary()
+    # find and print the requested information, then exit
+    kd = KanjiDictionary()
 
-if options.jlpt:
-    matches = kd.by_jlpt_level(options.jlpt)
-elif options.jouyou:
-    matches = kd.by_jouyou_grade(options.jouyou)
-else:
-    matches = kd.by_kanji(options.kanji)
-
-if matches == []:
-    sys.stderr.write("No kanji found.\n")
-    sys.exit(1)
-
-search_results = []
-for kanji in matches:
-    if options.only_kanji:
-        search_results.append(str(kanji))
+    if options.all:
+        matches = kd.all_rtk_index()
+    elif options.jlpt:
+        matches = kd.by_jlpt_level(options.jlpt)
+    elif options.jouyou:
+        matches = kd.by_jouyou_grade(options.jouyou)
+    elif options.rtk_index:
+        matches = kd.by_rtk_index(options.rtk_index)
     else:
-        if options.minimal:
-            kanji.format = format_minimal
+        matches = kd.by_kanji(options.kanji)
+
+    if matches == []:
+        sys.stderr.write("No kanji found.\n")
+        sys.exit(1)
+
+    search_results = []
+    for kanji in matches:
+        if options.only_kanji:
+            search_results.append(str(kanji))
         else:
-            kanji.format = options.format
+            if options.minimal:
+                kanji.format = format_minimal
+                
+                if options.mnemonics:
+                    kanji.format += "\n%story1%\n%story2%\n"
+            else:
+                kanji.format = options.format
 
-        kanji.max_examples = options.examples
-        search_results.append(str(kanji))
+            kanji.max_examples = options.examples
+            search_results.append(str(kanji))
 
-if options.only_kanji:
-    output = "".join(search_results)
-    print(output)
-elif options.format != format_default:
-    output = "\n".join(search_results)
-    print(output)
-else:
-    output = "\n".join(search_results)
-    print(output, end="")
+    if options.only_kanji:
+        output = "".join(search_results)
+        print(output)
+    elif options.format != format_default:
+        output = "\n".join(search_results)
+        print(output)
+    else:
+        output = "\n".join(search_results)
+        print(output, end="")
+
+if __name__ == "__main__":
+    main()
