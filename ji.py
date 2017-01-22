@@ -187,32 +187,7 @@ class KanjiDictionary(object):
     def all_rtk_index(self):
         return self._entries_nonempty("rtk-index")
 
-format_default = """\
-{kanji}
-{english} [{keyword}]
-On: {onyomi}
-Kun: {kunyomi}
-JLPT N{jlpt-level}, Jouyou: {jouyou-grade}, \
-Freq.: {frequency}, Heisig: {rtk-index}, \
-Strokes: {number-of-strokes}
 
-Examples:
-{examples}
-
-Mnemonics:
-{koohii-story-1}
-{koohii-story-2}
-"""
-
-format_minimal = """\
-{kanji}
-{english} [{keyword}]
-On: {onyomi}
-Kun: {kunyomi}
-JLPT N{jlpt-level}, Jouyou: {jouyou-grade}, \
-Freq.: {frequency}, Heisig: {rtk-index}, \
-Strokes: {number-of-strokes}
-"""
 
 def parse_args():
     """ Parse the command-line arguments. """
@@ -238,8 +213,7 @@ def parse_args():
         default="\n", help="specify the output separator")
     parser.add_argument("-i", "--rtk-index", metavar="index",
         type=int, help="search Kanji by their Heisig index")
-    parser.add_argument("-f", "--format", default=format_default,
-        help="specify output formatting")
+    parser.add_argument("-f", "--format", help="specify output formatting")
     parser.add_argument("-o", "--only-kanji", action="store_true",
         help="produce a wall of text which consists of Kanji")
     parser.add_argument("-m", "--minimal", action="store_true",
@@ -253,7 +227,8 @@ def main():
     options = parse_args()
 
     # Unescape newlines, tabs, etc.
-    options.format = codecs.getdecoder("unicode_escape")(options.format)[0]
+    if options.format:
+        options.format = codecs.getdecoder("unicode_escape")(options.format)[0]
     options.separator = codecs.getdecoder("unicode_escape")(options.separator)[0]
 
     # Construct the dictionary to make queries.
@@ -286,12 +261,37 @@ def main():
     if options.only_kanji:
         output_format = "{kanji}"
     elif options.minimal:
-        output_format = format_minimal
+        output_format = """\
+        {kanji}
+        {english} [{keyword}]
+        On: {onyomi}
+        Kun: {kunyomi}
+        JLPT N{jlpt-level}, Jouyou: {jouyou-grade}, \
+        Freq.: {frequency}, Heisig: {rtk-index}, \
+        Strokes: {number-of-strokes}
+        """
 
         if options.mnemonics:
             output_format += "\n{koohii-story-1}\n{koohii-story-2}\n"
-    else:
+    elif options.format:
         output_format = options.format
+    else:
+        output_format = """\
+        {kanji}
+        {english} [{keyword}]
+        On: {onyomi}
+        Kun: {kunyomi}
+        JLPT N{jlpt-level}, Jouyou: {jouyou-grade}, \
+        Freq.: {frequency}, Heisig: {rtk-index}, \
+        Strokes: {number-of-strokes}
+
+        Examples:
+        {examples}
+
+        Mnemonics:
+        {koohii-story-1}
+        {koohii-story-2}
+        """
 
     # Create a formatter object, and format the search results.
     formatter = KanjiFormatter(output_format)
