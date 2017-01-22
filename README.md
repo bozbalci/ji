@@ -6,8 +6,8 @@ Look up Kanji information from the CLI.
 
 * Has 3793 kanji in its dictionary!
 * Lists the most common on'yomi and kun'yomi readings.
-* Can look up frequency, JLPT level, Jouyou grade, Heisig index.
-* Can limit examples to a certain number.
+* Search by kanji literals, Heisig index, stroke count, JLPT level, etc.
+* Works well with other command-line programs such as `sort`, `column`, etc.
 
 ## Dependencies
 
@@ -66,32 +66,26 @@ Using pip:
 
 Find Kanji by its Heisig index:
 
-    $ ji -i 1044
-
-    海
-    sea, ocean [sea]
-    On: カイ
-    Kun: うみ
-    JLPT N4, Jouyou: 2, Freq.: 200, Heisig: 500, Strokes: 9
+    $ ji -i 2
+    二
+    two [two]
+    On: ニ、ジ
+    Kun: ふた、ふた.つ、ふたたび
+    JLPT N5, Jouyou: 1, Freq.: 9, Heisig: 2, Strokes: 2
 
     Examples:
-    海外(かいがい): foreign; abroad; overseas
-    海(うみ): sea; beach
-    海岸(かいがん): coast; beach
-    海洋(かいよう): ocean
-    海峡(かいきょう): channel (e.g. between two land masses); strait
-    航海(こうかい): sail; voyage
-    領海(りょうかい): territorial waters
-    海運(かいうん): maritime; marine transportation
-    海水浴(かいすいよく): sea bathing; seawater bath
-    海流(かいりゅう): ocean current
-    海抜(かいばつ): height above sea level
-    海路(かいろ): sea route
-    海鷂魚(えい): ray (fish); stingray
+    二(に): two
+    二人(ふたり): two persons; two people; pair; couple
+    二つ(ふたつ): two
+    二十歳(はたち): (1) 20 years old (2) twenty
+    二階建て(にかいだて): two-storied building
+    真っ二つ(まっぷたつ): in two equal parts
+    二日(ふつか): (1) second day of the month (2) two days
+    二十日(はつか): (1) twentieth (day of the month) (2) twenty days
 
     Mnemonics:
-    Every drop of water will eventually return to the sea.
-    As depicted in the classic SF film Fantastic Voyage, every drop of water is a sea, if you look close enough. Imagine peering through a microscope at a vast sea teeming with microbial life (and perhaps a minaturized submarine). Note: Take care not to confuse with ocean (#549).
+    Two lines.
+    Roman numeral II, written on its side.
 
 Minimal output:
 
@@ -128,7 +122,6 @@ Pretty output:
 Searching by Jouyou grade:
 
     $ ji -J3 -f "{kanji},{number-of-strokes}" | sort -rnk 2 | column -ts, | head
-
     鼻  14
     駅  14
     館  16

@@ -301,9 +301,12 @@ def main():
         result += [formatter.process()]
 
     if options.only_kanji:
-        print("".join(result), end="\n")
+        separator = ""
     else:
-        print(options.separator.join(result))
+        separator = options.separator
+
+    output = separator.join(result)
+    print(output)
 
 if __name__ == "__main__":
     main()
