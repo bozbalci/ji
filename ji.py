@@ -102,12 +102,6 @@ class Kanji(object):
         self.data.update(self.str_data)
         self.data.update(self.list_data)
 
-    def __str__(self):
-        try:
-            return self.formatter.process()
-        except:
-            return self.kanji
-
 class FormatDefault(dict):
     """ Empty entries in the placeholder dictionary will be replaced
         empty strings to avoid raising KeyError, while using format_map. """
