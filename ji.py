@@ -43,7 +43,7 @@ def _is_kanji(char):
 def _uniq(lst):
     """ Return the unique elements from a list. 
         Retrieved from https://www.peterbe.com/plog/uniqifiers-benchmark """
-        
+
     seen = set()
     seen_add = seen.add
 
@@ -253,13 +253,14 @@ def main():
             matches += kd.by_kanji(k)
     elif options.file:
         matches = []
+        seen = []
 
         with options.file as f:
             for line in f:
                 for k in _filter_kanji(line):
-                    matches += kd.by_kanji(k)
-
-        matches = _uniq(matches)
+                    if k not in seen:
+                        matches += kd.by_kanji(k)
+                        seen += [k]
     else:
         matches = []
 
