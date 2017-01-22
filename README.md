@@ -11,7 +11,7 @@ Look up Kanji information from the CLI.
 
 ## Dependencies
 
-* Python >= 3.0
+* Python >= 3.2
 * lxml
 
 You may install lxml as follows,
@@ -28,47 +28,70 @@ Using pip:
 
     sudo pip install lxml
 
-## Installation
-
-    git clone https://github.com/bozbalci/ji
-    chmod +x ji/ji
-    cp ji/ji ~/bin # or to any other directory in $PATH
-
-    # You can, alternatively, move the dictionary file to
-    # somewhere else. Don't forget to edit the line in
-    # the script to point to the new location.
-    mkdir -p ~/.local/share/ji
-    cp ji/kanji_all.xml ~/.local/share/ji
-
 ## Usage
 
     usage: ji [options]
 
-    Look up kanji information from the CLI.
+    Look up Kanji information from the CLI.
 
     positional arguments:
-      kanji                 search by kanji
+      kanji                 search by Kanji
 
     optional arguments:
       -h, --help            show this help message and exit
-      -N LEVEL, --jlpt LEVEL
-                            list all kanji in JLPT LEVEL
-      -J GRADE, --jouyou GRADE
-                            list all kanji in Jouyou grade GRADE
+      -a, --all             match all Kanji included in Remembering the Kanji
+                            books
+      -N int, --jlpt int    match all Kanji in JLPT int
+      -J grade, --jouyou grade
+                            match all Kanji in Jouyou grade grade
+      -S num, --strokes num
+                            match all Kanji with num strokes
+      -s string, --separator string
+                            specify the output separator
+      -i index, --rtk-index index
+                            search Kanji by their Heisig index
       -f FORMAT, --format FORMAT
                             specify output formatting
-      -o, --only-kanji      only print the matching kanji characters
+      -o, --only-kanji      produce a wall of text which consists of Kanji
       -m, --minimal         produce minimal output (no examples, no mnemonics)
-      -e NUM, --examples NUM
-                            prints the first NUM examples
+      -M, --mnemonics       when combined with -m, print mnemonics as well
 
-    Available placeholders are: %kanji% %kunyomi% %onyomi% %nanori% %english%
-    %examples% %jlpt_level% %jouyou_grade% %frequency% %components%
-    %number_of_strokes% %kanji_radical% %radical_number% %radical_strokes%
-    %radical_reading% %traditional_form% %classification% %keyword%
-    %koohii_story_1% %koohii_story_2% %rtk_index%
+    Available placeholders: {kanji} {kunyomi} {onyomi} {nanori} {english} {jlpt-
+    level} {jouyou-grade} {frequency} {number-of-strokes} {kanji-radical}
+    {radical-number} {radical-strokes} {radical-reading} {traditional-form}
+    {classification} {classification} {keyword} {koohii-story-1} {koohii-story-2}
+    {rtk-index} {examples} {components}
 
 ## Examples
+
+Find Kanji by its Heisig index:
+
+    $ ji -i 1044
+
+    海
+    sea, ocean [sea]
+    On: カイ
+    Kun: うみ
+    JLPT N4, Jouyou: 2, Freq.: 200, Heisig: 500, Strokes: 9
+
+    Examples:
+    海外(かいがい): foreign; abroad; overseas
+    海(うみ): sea; beach
+    海岸(かいがん): coast; beach
+    海洋(かいよう): ocean
+    海峡(かいきょう): channel (e.g. between two land masses); strait
+    航海(こうかい): sail; voyage
+    領海(りょうかい): territorial waters
+    海運(かいうん): maritime; marine transportation
+    海水浴(かいすいよく): sea bathing; seawater bath
+    海流(かいりゅう): ocean current
+    海抜(かいばつ): height above sea level
+    海路(かいろ): sea route
+    海鷂魚(えい): ray (fish); stingray
+
+    Mnemonics:
+    Every drop of water will eventually return to the sea.
+    As depicted in the classic SF film Fantastic Voyage, every drop of water is a sea, if you look close enough. Imagine peering through a microscope at a vast sea teeming with microbial life (and perhaps a minaturized submarine). Note: Take care not to confuse with ocean (#549).
 
 Minimal output:
 
@@ -79,47 +102,43 @@ Minimal output:
     Kun: ひと、-り、-と
     JLPT N5, Jouyou: 1, Freq.: 5, Heisig: 1023, Strokes: 2
 
-Limiting examples to a certain number:
+Get all Kanji from a string:
 
-    $ ji -e 3 字
+    # -o is equivalent to -f "{kanji}" -s ""
 
-    字
-    character, letter, word, section of village [character]
-    On: ジ
-    Kun: あざ、あざな、-な
-    JLPT N4, Jouyou: 1, Freq.: 485, Heisig: 197, Strokes: 6
+    $ ji -o "「浦島太郎」は日本の古い話です。"
+    島本話郎古日太浦
 
-    Examples:
-    文字(もんじ): (1) letter (of alphabet); character (2) literal
-    黒字(くろじ): balance (figure) in the black
-    数字(すうじ): numeral; figure; digit; numeric character
+Pretty output:
 
-    Mnemonics:
-    CHILDren learn Kanji characters underneath a HOUSE.
-    Why do I have to wear this roof on my head all the time father? "Shut up! It builds character!".
+    $ ji -S2 -f "{kanji},{keyword},{rtk-index}" | column -ts,
+    二  two       2
+    七  seven     7
+    八  eight     8
+    九  nine      9
+    十  ten       10
+    刀  sword     87
+    丁  street    95
+    了  complete  101
+    又  or again  752
+    入  enter     842
+    力  power     922
+    人  person    1023
 
-Listing kanji by JLPT level or Jouyou grade:
+Searching by Jouyou grade:
 
-    $ ji -N5 -o
-    一二三四五六七八九十口日月目古白百中千上下見万左右子女母小少大多外名川水土時火魚安木本先金道車前高週学書言話語読雨天立北毎東電午国店手友会出山入分耳買男行人休花何年社半父校足空後食飲新生今西南間聞円来気長駅
+    $ ji -J3 -f "{kanji},{number-of-strokes}" | sort -rnk 2 | column -ts, | head
 
-    $ ji -J1 -o
-    一二三四五六七八九十口日月田目早白百中千上下貝見左右町子女小大夕名石川水土火字木林森村本草犬先王玉金車学正雨天立音虫手出山入耳力男竹人休花年校足空糸青生文赤円気
-
-Special formatting:
-
-    $ ji -N5 -f "%kanji%,%number_of_strokes%"
-    一,1
-    二,2
-    三,3
-    四,5
-    五,4
-    六,4
-    七,2
-    ... # redacted
-    
-    $ ji -J1 -f "%kanji%" | wc -l
-    80
+    鼻  14
+    駅  14
+    館  16
+    飲  12
+    題  18
+    面  9
+    集  12
+    階  12
+    陽  12
+    院  10
 
 ## Tips
 

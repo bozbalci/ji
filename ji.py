@@ -34,7 +34,32 @@ from lxml import etree
 # Edit this line to change the dictionary path
 DICTIONARY_PATH = "~/.local/share/ji/kanji_all.xml"
 
+def is_kanji(char):
+    """ Check if given character is a Kanji. """
+
+    return ord("\u4e00") < ord(char) < ord("\u9fff")
+
+def filter_kanji(text):
+    """ Return a list of all unique Kanji in a string. """
+
+    return list(set([c for c in text if is_kanji(c)]))
+
+# Information fields in Kanji, where the contents are strings.
+str_fields = [
+    "kanji", "kunyomi", "onyomi", "nanori",
+    "english", "jlpt-level", "jouyou-grade", "frequency",
+    "number-of-strokes", "kanji-radical", "radical-number",
+    "radical-strokes", "radical-reading", "traditional-form",
+    "classification", "classification", "keyword",
+    "koohii-story-1", "koohii-story-2", "rtk-index"
+]
+
+# Fields in Kanji where the content is a list of strings.
+list_fields = ["examples", "components"]
+
 def _absolute_path(path):
+    """ Converts path to absolute paths, expands variables and users. """
+
     path = os.path.expandvars(path)
     path = os.path.expanduser(path)
     path = os.path.abspath(path)
@@ -42,107 +67,60 @@ def _absolute_path(path):
     return path
 
 class Kanji(object):
+    """ Class for Chinese characters. """
+
     def __init__(self, entry):
         """ Builds a Kanji object from an XML element. """
 
         self._entry = entry
-        self.kanji = entry.find("kanji").text
-        self.kunyomi = entry.find("kunyomi").text
-        self.onyomi = entry.find("onyomi").text
-        self.nanori = entry.find("nanori").text
-        self.english = entry.find("english").text
 
-        # default value for max examples is -1, prints all examples
-        self.max_examples = -1
-        self.examples = []
-        for ex in entry.find("examples").getchildren():
-            self.examples.append(ex.text)
+        self.str_data = {}
+        for f in str_fields:
+            self.str_data[f] = entry.find(f).text
 
-        self.jlpt_level = entry.find("jlpt-level").text
-        self.jouyou_grade = entry.find("jouyou-grade").text
-        self.frequency = entry.find("frequency").text
+        self.list_data = {}
+        for f in list_fields:
+            self.list_data[f] = []
+            
+            for e in entry.find(f).getchildren():
+                self.list_data[f] += [e.text]
 
-        self.components = []
-        for cp in entry.find("components").getchildren():
-            self.components.append(cp.text)
+        # Flatten the list data for printing later
+        self.list_data = {f: "\n".join(e) for f, e in self.list_data.items()
+            if not None in e}
 
-        self.number_of_strokes = entry.find("number-of-strokes").text
-        self.kanji_radical = entry.find("kanji-radical").text
-        self.radical_number = entry.find("radical-number").text
-        self.radical_strokes = entry.find("radical-strokes").text
-        self.radical_reading = entry.find("radical-reading").text
-        self.traditional_form = entry.find("traditional-form").text
-        self.classification = entry.find("classification").text
-        self.keyword = entry.find("keyword").text
-        self.koohii_story_1 = entry.find("koohii-story-1").text
-        self.koohii_story_2 = entry.find("koohii-story-2").text
-        self.rtk_index = entry.find("rtk-index").text
-
-    def _examples(self):
-        result = []
-
-        if self.max_examples > 0:
-            for _, ex in zip(range(self.max_examples), self.examples):
-                result.append(ex)
-        else:
-            if self.max_examples == -1:
-                for ex in self.examples:
-                    result.append(ex)
-            if self.max_examples == 0:
-                result = []
-
-        # remove empty examples
-        result = [ex for ex in result if ex is not None]
-
-        return "\n".join(result)
-    
-    def _components(self):
-        result = self.components
-
-        if result[0] is None:
-            return "None"
-
-        return "\n".join(result)
-
-    def _replace_format(self):
-        placeholders = {
-            "%kanji%": self.kanji,
-            "%kun%": self.kunyomi,
-            "%on%": self.onyomi,
-            "%nanori%": self.nanori,
-            "%meaning%": self.english,
-            "%examples%": self._examples(),
-            "%jlpt%": self.jlpt_level,
-            "%jouyou%": self.jouyou_grade,
-            "%freq%": self.frequency,
-            "%components%": self._components(),
-            "%strokes%": self.number_of_strokes,
-            "%radical%": self.kanji_radical,
-            "%radical_number%": self.radical_number,
-            "%radical_strokes%": self.radical_strokes,
-            "%radical_reading%": self.radical_reading,
-            "%traditional_form%": self.traditional_form,
-            "%classification%": self.classification,
-            "%keyword%": self.keyword,
-            "%story1%": self.koohii_story_1,
-            "%story2%": self.koohii_story_2,
-            "%index%": self.rtk_index,
-        }
-
-        result = self.format
-        for k, v in placeholders.items():
-            try:
-                result = result.replace(k, v)
-            except:
-                result = result.replace(k, "")
-
-        return result
+        self.data = {}
+        self.data.update(self.str_data)
+        self.data.update(self.list_data)
 
     def __str__(self):
         try:
-            return self._replace_format()
-        except AttributeError:
+            return self.formatter.process()
+        except:
             return self.kanji
+
+class FormatDefault(dict):
+    """ Empty entries in the placeholder dictionary will be replaced
+        empty strings to avoid raising KeyError, while using format_map. """
+
+    def __missing__(self, key):
+        return ""
+
+class KanjiFormatter(object):
+    """ Takes Kanji and returns a string formatted in a way specified by
+        the user. """
+
+    def __init__(self, output_format):
+        self.output_format = output_format
+
+    def load(self, kanji):
+        self.kanji = kanji
+
+    def process(self, kanji=None):
+        if kanji is None:
+            kanji = self.kanji
+
+        return self.output_format.format_map(FormatDefault(kanji.data))
 
 class KanjiDictionary(object):
     """ Parses the dictionary file and provides wrappers for search
@@ -165,7 +143,7 @@ class KanjiDictionary(object):
         result = []
         for match in search:
             entry = match.getparent()
-            result.append(Kanji(entry))
+            result += [Kanji(entry)]
 
         return result
 
@@ -178,7 +156,7 @@ class KanjiDictionary(object):
     def _entries_nonempty(self, tag):
         return self._get_entries(self._search_text_nonempty(tag))
 
-    # bunch of wrappers for public usage
+    # Bunch of wrappers for public usage
     def by_kanji(self, query):
         return self._entries_exact("kanji", query)
     
@@ -210,118 +188,122 @@ class KanjiDictionary(object):
         return self._entries_nonempty("rtk-index")
 
 format_default = """\
-%kanji%
-%meaning% [%keyword%]
-On: %on%
-Kun: %kun%
-JLPT N%jlpt%, Jouyou: %jouyou%, \
-Freq.: %freq%, Heisig: %index%, \
-Strokes: %strokes%
+{kanji}
+{english} [{keyword}]
+On: {onyomi}
+Kun: {kunyomi}
+JLPT N{jlpt-level}, Jouyou: {jouyou-grade}, \
+Freq.: {frequency}, Heisig: {rtk-index}, \
+Strokes: {number-of-strokes}
 
 Examples:
-%examples%
+{examples}
 
 Mnemonics:
-%story1%
-%story2%
+{koohii-story-1}
+{koohii-story-2}
 """
 
 format_minimal = """\
-%kanji%
-%meaning% [%keyword%]
-On: %on%
-Kun: %kun%
-JLPT N%jlpt%, Jouyou: %jouyou%, \
-Freq.: %freq%, Heisig: %index%, \
-Strokes: %strokes%
+{kanji}
+{english} [{keyword}]
+On: {onyomi}
+Kun: {kunyomi}
+JLPT N{jlpt-level}, Jouyou: {jouyou-grade}, \
+Freq.: {frequency}, Heisig: {rtk-index}, \
+Strokes: {number-of-strokes}
 """
 
-# parse command-line arguments
-def _positive_integer(string):
-    value = int(string)
-    if value < 0:
-        msg = "{} is not a positive number" % string
-        raise argparse.ArgumentTypeError(msg)
-    return value
+def parse_args():
+    """ Parse the command-line arguments. """
 
-def main():
     parser = argparse.ArgumentParser(
         prog="ji",
         usage="%(prog)s [options]",
-        description="Look up kanji information from the CLI.",
-        epilog="""Available placeholders are: %kanji% %kun% %on% %nanori% %meaning% \
-                %examples% %jlpt% %jouyou% %freq% %components% %strokes% %radical% \
-                %radical_number% %radical_strokes% %radical_reading% %traditional_form% \
-                %classification% %keyword% %story1% %story2% %index% \
-                """
+        description="Look up Kanji information from the CLI.",
+        epilog="Available placeholders: " + " ".join(
+            ["{{{}}}".format(f) for f in str_fields + list_fields])
     )
-    parser.add_argument("kanji", nargs="?", help="search by kanji")
+
+    parser.add_argument("kanji", nargs="?", help="search by Kanji")
     parser.add_argument("-a", "--all", action="store_true",
-            help="match every kanji with a Heisig index")
-    parser.add_argument("-N", "--jlpt", metavar="LEVEL",
-        type=_positive_integer, help="list all kanji in JLPT %(metavar)s")
-    parser.add_argument("-J", "--jouyou", metavar="GRADE",
-        help="list all kanji in Jouyou grade %(metavar)s")
-    parser.add_argument("-i", "--rtk-index", metavar="INDEX",
-        help="search kanji by Heisig index")
+            help="match all Kanji included in Remembering the Kanji books")
+    parser.add_argument("-N", "--jlpt", metavar="int",
+        type=int, help="match all Kanji in JLPT %(metavar)s")
+    parser.add_argument("-J", "--jouyou", metavar="grade",
+        type=int, help="match all Kanji in Jouyou grade %(metavar)s")
+    parser.add_argument("-S", "--strokes", metavar="num",
+        type=int, help="match all Kanji with %(metavar)s strokes")
+    parser.add_argument("-s", "--separator", metavar="string",
+        default="\n", help="specify the output separator")
+    parser.add_argument("-i", "--rtk-index", metavar="index",
+        type=int, help="search Kanji by their Heisig index")
     parser.add_argument("-f", "--format", default=format_default,
         help="specify output formatting")
     parser.add_argument("-o", "--only-kanji", action="store_true",
-        help="only print the matching kanji characters")
+        help="produce a wall of text which consists of Kanji")
     parser.add_argument("-m", "--minimal", action="store_true",
         help="produce minimal output (no examples, no mnemonics)")
     parser.add_argument("-M", "--mnemonics", action="store_true",
         help="when combined with -m, print mnemonics as well")
-    parser.add_argument("-e", "--examples", metavar="NUM", default=-1,
-        type=_positive_integer, help="prints the first %(metavar)s examples")
-    options = parser.parse_args()
+
+    return parser.parse_args()
+
+def main():
+    options = parse_args()
 
     # Unescape newlines, tabs, etc.
     options.format = codecs.getdecoder("unicode_escape")(options.format)[0]
+    options.separator = codecs.getdecoder("unicode_escape")(options.separator)[0]
 
-    # find and print the requested information, then exit
+    # Construct the dictionary to make queries.
     kd = KanjiDictionary()
 
+    # Determine the query from options passed to the script.
     if options.all:
         matches = kd.all_rtk_index()
     elif options.jlpt:
         matches = kd.by_jlpt_level(options.jlpt)
     elif options.jouyou:
         matches = kd.by_jouyou_grade(options.jouyou)
+    elif options.strokes:
+        matches = kd.by_number_of_strokes(options.strokes)
     elif options.rtk_index:
         matches = kd.by_rtk_index(options.rtk_index)
+    elif options.kanji:
+        matches = []
+
+        for k in filter_kanji(options.kanji):
+            matches += kd.by_kanji(k)
     else:
-        matches = kd.by_kanji(options.kanji)
+        matches = []
 
     if matches == []:
         sys.stderr.write("No kanji found.\n")
         sys.exit(1)
 
-    search_results = []
-    for kanji in matches:
-        if options.only_kanji:
-            search_results.append(str(kanji))
-        else:
-            if options.minimal:
-                kanji.format = format_minimal
-                
-                if options.mnemonics:
-                    kanji.format += "\n%story1%\n%story2%\n"
-            else:
-                kanji.format = options.format
+    # Determine the output format from options passed to the script.
+    if options.only_kanji:
+        output_format = "{kanji}"
+    elif options.minimal:
+        output_format = format_minimal
 
-            kanji.max_examples = options.examples
-            search_results.append(str(kanji))
+        if options.mnemonics:
+            output_format += "\n{koohii-story-1}\n{koohii-story-2}\n"
+    else:
+        output_format = options.format
+
+    # Create a formatter object, and format the search results.
+    formatter = KanjiFormatter(output_format)
+    result = []
+    for kanji in matches:
+        formatter.load(kanji)
+        result += [formatter.process()]
 
     if options.only_kanji:
-        output = "".join(search_results)
-        print(output)
-    elif options.format != format_default:
-        output = "\n".join(search_results)
-        print(output)
+        print("".join(result), end="\n")
     else:
-        output = "\n".join(search_results)
-        print(output, end="")
+        print(options.separator.join(result))
 
 if __name__ == "__main__":
     main()
