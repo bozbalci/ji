@@ -26,6 +26,7 @@
 
 import argparse
 import codecs
+import fileinput
 import os
 import sys
 
@@ -34,15 +35,24 @@ from lxml import etree
 # Edit this line to change the dictionary path
 DICTIONARY_PATH = "~/.local/share/ji/kanji_all.xml"
 
-def is_kanji(char):
+def _is_kanji(char):
     """ Check if given character is a Kanji. """
 
     return ord("\u4e00") < ord(char) < ord("\u9fff")
 
-def filter_kanji(text):
-    """ Return a list of all unique Kanji in a string. """
+def _uniq(lst):
+    """ Return the unique elements from a list. 
+        Retrieved from https://www.peterbe.com/plog/uniqifiers-benchmark """
+        
+    seen = set()
+    seen_add = seen.add
 
-    return list(set([c for c in text if is_kanji(c)]))
+    return [i for i in lst if not (i in seen or seen_add(i))]
+
+def _filter_kanji(text):
+    """ Return a list of all unique Kanji in a string. """
+    
+    return _uniq([c for c in text if _is_kanji(c)])
 
 # Information fields in Kanji, where the contents are strings.
 str_fields = [
@@ -50,8 +60,7 @@ str_fields = [
     "english", "jlpt-level", "jouyou-grade", "frequency",
     "number-of-strokes", "kanji-radical", "radical-number",
     "radical-strokes", "radical-reading", "traditional-form",
-    "classification", "classification", "keyword",
-    "koohii-story-1", "koohii-story-2", "rtk-index"
+    "classification", "keyword", "koohii-story-1", "koohii-story-2", "rtk-index"
 ]
 
 # Fields in Kanji where the content is a list of strings.
@@ -160,15 +169,6 @@ class KanjiDictionary(object):
     def by_kanji(self, query):
         return self._entries_exact("kanji", query)
     
-    def by_kunyomi(self, query):
-        return self._entries_contains("kunyomi", query)
-    
-    def by_onyomi(self, query):
-        return self._entries_contains("onyomi", query)
-    
-    def by_meaning(self, query):
-        return self._entries_contains("english", query)
-    
     def by_jlpt_level(self, query):
         return self._entries_exact("jlpt-level", query)
     
@@ -187,8 +187,6 @@ class KanjiDictionary(object):
     def all_rtk_index(self):
         return self._entries_nonempty("rtk-index")
 
-
-
 def parse_args():
     """ Parse the command-line arguments. """
 
@@ -201,25 +199,26 @@ def parse_args():
     )
 
     parser.add_argument("kanji", nargs="?", help="search by Kanji")
+    parser.add_argument("-F", "--file", type=argparse.FileType('r'),
+        default=sys.stdin, help="search for all Kanji contained in a file")
     parser.add_argument("-a", "--all", action="store_true",
-            help="match all Kanji included in Remembering the Kanji books")
+        help="match all Kanji included in Remembering the Kanji books")
     parser.add_argument("-N", "--jlpt", metavar="level",
         type=int, help="match all Kanji in JLPT %(metavar)s")
     parser.add_argument("-J", "--jouyou", metavar="grade",
         type=int, help="match all Kanji in Jouyou grade %(metavar)s")
     parser.add_argument("-S", "--strokes", metavar="num",
         type=int, help="match all Kanji with %(metavar)s strokes")
-    parser.add_argument("-s", "--separator", metavar="string",
-        default="\n", help="specify the output separator")
+    parser.add_argument("-k", "--keyword", help="search Kanji by Heisig keyword")
     parser.add_argument("-i", "--rtk-index", metavar="index",
         type=int, help="search Kanji by their Heisig index")
     parser.add_argument("-f", "--format", help="specify output formatting")
+    parser.add_argument("-s", "--separator", metavar="string", default="\n",
+        help="specify the output separator")
     parser.add_argument("-o", "--only-kanji", action="store_true",
         help="produce a wall of text which consists of Kanji")
     parser.add_argument("-m", "--minimal", action="store_true",
         help="produce minimal output (no examples, no mnemonics)")
-    parser.add_argument("-M", "--mnemonics", action="store_true",
-        help="when combined with -m, print mnemonics as well")
 
     return parser.parse_args()
 
@@ -243,13 +242,24 @@ def main():
         matches = kd.by_jouyou_grade(options.jouyou)
     elif options.strokes:
         matches = kd.by_number_of_strokes(options.strokes)
+    elif options.keyword:
+        matches = kd.by_keyword(options.keyword)
     elif options.rtk_index:
         matches = kd.by_rtk_index(options.rtk_index)
     elif options.kanji:
         matches = []
 
-        for k in filter_kanji(options.kanji):
+        for k in _filter_kanji(options.kanji):
             matches += kd.by_kanji(k)
+    elif options.file:
+        matches = []
+
+        with options.file as f:
+            for line in f:
+                for k in _filter_kanji(line):
+                    matches += kd.by_kanji(k)
+
+        matches = _uniq(matches)
     else:
         matches = []
 
@@ -261,37 +271,17 @@ def main():
     if options.only_kanji:
         output_format = "{kanji}"
     elif options.minimal:
-        output_format = """\
-        {kanji}
-        {english} [{keyword}]
-        On: {onyomi}
-        Kun: {kunyomi}
-        JLPT N{jlpt-level}, Jouyou: {jouyou-grade}, \
-        Freq.: {frequency}, Heisig: {rtk-index}, \
-        Strokes: {number-of-strokes}
-        """
-
-        if options.mnemonics:
-            output_format += "\n{koohii-story-1}\n{koohii-story-2}\n"
+        output_format = "{kanji} {english}"
     elif options.format:
         output_format = options.format
     else:
-        output_format = """\
-        {kanji}
-        {english} [{keyword}]
-        On: {onyomi}
-        Kun: {kunyomi}
-        JLPT N{jlpt-level}, Jouyou: {jouyou-grade}, \
-        Freq.: {frequency}, Heisig: {rtk-index}, \
-        Strokes: {number-of-strokes}
-
-        Examples:
-        {examples}
-
-        Mnemonics:
-        {koohii-story-1}
-        {koohii-story-2}
-        """
+        output_format = ("{kanji}\n"
+                         "{english} [{keyword}]\n"
+                         "Kun: {kunyomi}\n"
+                         "On: {onyomi}\n"
+                         "JLPT N{jlpt-level}, Jouyou: {jouyou-grade}, "
+                         "Freq.: {frequency}, Heisig: {rtk-index}, "
+                         "Strokes: {number-of-strokes}\n")
 
     # Create a formatter object, and format the search results.
     formatter = KanjiFormatter(output_format)

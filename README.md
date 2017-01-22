@@ -39,6 +39,7 @@ Using pip:
 
     optional arguments:
       -h, --help            show this help message and exit
+      -F FILE, --file FILE  search for all Kanji contained in a file
       -a, --all             match all Kanji included in Remembering the Kanji
                             books
       -N level, --jlpt level
@@ -47,21 +48,22 @@ Using pip:
                             match all Kanji in Jouyou grade grade
       -S num, --strokes num
                             match all Kanji with num strokes
-      -s string, --separator string
-                            specify the output separator
+      -k KEYWORD, --keyword KEYWORD
+                            search Kanji by Heisig keyword
       -i index, --rtk-index index
                             search Kanji by their Heisig index
       -f FORMAT, --format FORMAT
                             specify output formatting
+      -s string, --separator string
+                            specify the output separator
       -o, --only-kanji      produce a wall of text which consists of Kanji
       -m, --minimal         produce minimal output (no examples, no mnemonics)
-      -M, --mnemonics       when combined with -m, print mnemonics as well
 
     Available placeholders: {kanji} {kunyomi} {onyomi} {nanori} {english} {jlpt-
     level} {jouyou-grade} {frequency} {number-of-strokes} {kanji-radical}
     {radical-number} {radical-strokes} {radical-reading} {traditional-form}
-    {classification} {classification} {keyword} {koohii-story-1} {koohii-story-2}
-    {rtk-index} {examples} {components}
+    {classification} {keyword} {koohii-story-1} {koohii-story-2} {rtk-index}
+    {examples} {components}
 
 ## Examples
 
@@ -70,69 +72,60 @@ Find Kanji by its Heisig index:
     $ ji -i 2
     二
     two [two]
-    On: ニ、ジ
     Kun: ふた、ふた.つ、ふたたび
+    On: ニ、ジ
     JLPT N5, Jouyou: 1, Freq.: 9, Heisig: 2, Strokes: 2
-
-    Examples:
-    二(に): two
-    二人(ふたり): two persons; two people; pair; couple
-    二つ(ふたつ): two
-    二十歳(はたち): (1) 20 years old (2) twenty
-    二階建て(にかいだて): two-storied building
-    真っ二つ(まっぷたつ): in two equal parts
-    二日(ふつか): (1) second day of the month (2) two days
-    二十日(はつか): (1) twentieth (day of the month) (2) twenty days
-
-    Mnemonics:
-    Two lines.
-    Roman numeral II, written on its side.
 
 Minimal output:
 
-    $ ji -m 人
-    人
-    person [person]
-    On: ジン、ニン
-    Kun: ひと、-り、-と
-    JLPT N5, Jouyou: 1, Freq.: 5, Heisig: 1023, Strokes: 2
+    $ ji -m 方
+    方 direction, person, alternative
 
-Get all Kanji from a string:
+Minimum output (equivalent to `-f {kanji} -s ""`):
 
-    # -o is equivalent to -f "{kanji}" -s ""
+    $ ji -o "「浦島太郎」は、日本の古い話です。"
+    浦島太郎日本古話
 
-    $ ji -o "「浦島太郎」は日本の古い話です。"
-    島本話郎古日太浦
+You can read from files:
 
-Pretty output:
+    $ ji -oF haiku.txt
+    水無月虚空涼時鳥
 
-    $ ji -S2 -f "{kanji},{keyword},{rtk-index}" | column -ts,
-    二  two       2
-    七  seven     7
-    八  eight     8
-    九  nine      9
-    十  ten       10
-    刀  sword     87
-    丁  street    95
-    了  complete  101
-    又  or again  752
-    入  enter     842
-    力  power     922
+... or from stdin:
+
+    $ echo "外国人" | ji -m
+    外 outside
+    国 country
+    人 person
+
+You can customize your output, and use coreutils to prettify it:
+
+    $ ji -S2 -f "{kanji},{keyword},{rtk-index}" | tac | head -5 | column -ts,
     人  person    1023
+    力  power     922
+    入  enter     842
+    又  or again  752
+    了  complete  101
 
-Searching by Jouyou grade:
+You can search Kanji by their Jouyou grade or JLPT level:
 
-    $ ji -J3 -f "{kanji},{number-of-strokes}" | sort -rnk 2 | column -ts, | head
-    鼻  14
-    駅  14
-    館  16
-    飲  12
-    題  18
-    面  9
-    集  12
-    階  12
-    陽  12
-    院  10
+    $ ji -o -J1 | sed 's/.\{20\}/&\n/g'
+    一二三四五六七八九十口日月田目早白百中千
+    上下貝見左右町子女小大夕名石川水土火字木
+    林森村本草犬先王玉金車学正雨天立音虫手出
+    山入耳力男竹人休花年校足空糸青生文赤円気
+
+You can search Kanji by their Heisig keywords:
+
+    $ ji -k "water" -f "{kanji},{keyword},{rtk-index}" | column -ts,
+    水  water            137
+    滝  waterfall        576
+    湯  hot water        585
+    洵  swirling waters  2387
+    汀  water's edge     2405
+    汲  draw water       2413
+
+You can customize your output to include examples, radical information, mnemonics and much more. There is a list of all available placeholders found at `ji -h`.
 
 ## Tips
 
