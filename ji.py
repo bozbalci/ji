@@ -228,7 +228,7 @@ def parse_args():
     parser.add_argument("kanji", nargs="?", help="search by Kanji")
     parser.add_argument("-a", "--all", action="store_true",
             help="match all Kanji included in Remembering the Kanji books")
-    parser.add_argument("-N", "--jlpt", metavar="int",
+    parser.add_argument("-N", "--jlpt", metavar="level",
         type=int, help="match all Kanji in JLPT %(metavar)s")
     parser.add_argument("-J", "--jouyou", metavar="grade",
         type=int, help="match all Kanji in Jouyou grade %(metavar)s")

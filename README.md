@@ -41,7 +41,8 @@ Using pip:
       -h, --help            show this help message and exit
       -a, --all             match all Kanji included in Remembering the Kanji
                             books
-      -N int, --jlpt int    match all Kanji in JLPT int
+      -N level, --jlpt level
+                            match all Kanji in JLPT level
       -J grade, --jouyou grade
                             match all Kanji in Jouyou grade grade
       -S num, --strokes num
